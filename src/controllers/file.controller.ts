@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { File } from "../models/file.model";
+import fs from "fs/promises";
+import path from "path";
 
 export const getFiles = async (req: Request, res: Response) => {
   const { folderId, page = 1, limit = 10 } = req.query;
@@ -25,4 +27,31 @@ export const getFileById = async (
   }
 
   res.status(200).json(file);
+};
+
+export const deleteFile = async (req: Request, res: Response) => {
+  try {
+    const _id = req.params.id;
+
+    const file: any = await File.findById(_id);
+    if (!file) {
+      res.status(404).json({ error: "File not found in DB" });
+    }
+    console.log(file.path);
+    const filePath = path.join(__dirname, "..", "..", file.path);
+    console.log(filePath);
+
+    try {
+      await fs.unlink(filePath);
+    } catch (fsError) {
+      console.warn(`Could not delete physical file: ${fsError}`);
+    }
+
+    await File.deleteOne({ _id });
+
+    res.status(200).json({ message: "File deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    res.status(500).json({ error: "Failed to delete file" });
+  }
 };

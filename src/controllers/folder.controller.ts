@@ -9,25 +9,71 @@ export const createFolder = async (req: Request, res: Response) => {
   res.status(201).json(folder);
 };
 
-// Recursive function to get children
-const buildFolderTree: any = async (parentId: string | null = null) => {
-  const folders = await Folder.find({ parent: parentId }).lean();
+// Recursive
+const buildFolderTree: any = async (
+  parentId: string | null = null,
+  filters: any = {}
+) => {
+  const folderQuery: any = { parent: parentId };
 
-  // For each folder, fetch its children recursively
-  const foldersWithChildren = await Promise.all(
+  if (filters.name) {
+    folderQuery.name = { $regex: filters.name, $options: "i" };
+  }
+
+  if (filters.description) {
+    folderQuery.description = { $regex: filters.description, $options: "i" };
+  }
+
+  if (filters.createdAt) {
+    const date = new Date(filters.createdAt);
+    const nextDay = new Date(date);
+    nextDay.setDate(date.getDate() + 1);
+    folderQuery.createdAt = { $gte: date, $lt: nextDay };
+  }
+
+  const folders = await Folder.find(folderQuery).lean();
+
+  const foldersWithChildrenAndFiles = await Promise.all(
     folders.map(async (folder) => {
-      const children = await buildFolderTree(folder._id.toString());
-      return { ...folder, children };
+      const children = await buildFolderTree(folder._id.toString(), filters);
+
+      const fileQuery: any = { folder: folder._id };
+
+      if (filters.name) {
+        fileQuery.name = { $regex: filters.name, $options: "i" };
+      }
+
+      if (filters.createdAt) {
+        const date = new Date(filters.createdAt);
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
+        fileQuery.createdAt = { $gte: date, $lt: nextDay };
+      }
+
+      const files = await File.find(fileQuery).lean();
+
+      return {
+        ...folder,
+        children,
+        files, 
+      };
     })
   );
 
-  return foldersWithChildren;
+  return foldersWithChildrenAndFiles;
 };
 
 export const getFolderStructure = async (req: Request, res: Response) => {
   try {
-    const tree = await buildFolderTree(null); // Start from root folders (parent: null)
-    res.json({ folders: tree });
+    const filters = {
+      name: req.query.name?.toString(),
+      description: req.query.description?.toString(),
+      createdAt: req.query.createdAt?.toString(),
+    };
+
+    const folders = await buildFolderTree(null, filters);
+    const files = await File.find({ folder: null }).lean();
+    res.json({ folders, files });
   } catch (error) {
     console.error("Error building folder structure:", error);
     res.status(500).json({ error: "Failed to fetch folder structure" });
@@ -39,11 +85,13 @@ export const updateFolder = async (req: Request, res: Response) => {
     const _id = req.params.id;
     const data = req.body;
 
-    const updatedFolder = await Folder.findByIdAndUpdate(_id, data, { new: true });
+    const updatedFolder = await Folder.findByIdAndUpdate(_id, data, {
+      new: true,
+    });
 
     if (!updatedFolder) {
-      res.status(404).json({ error: "Folder not found" })
-      return
+      res.status(404).json({ error: "Folder not found" });
+      return;
     }
 
     res.status(200).json({ message: "Folder updated", folder: updatedFolder });
@@ -62,7 +110,7 @@ export const deleteFolder = async (req: Request, res: Response) => {
 
     if (result.deletedCount === 0) {
       res.status(404).json({ error: "Folder not found" });
-      return
+      return;
     }
 
     res.status(200).json({ message: "Folder deleted successfully" });
