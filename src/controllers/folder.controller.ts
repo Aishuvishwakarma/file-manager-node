@@ -55,7 +55,7 @@ const buildFolderTree: any = async (
       return {
         ...folder,
         children,
-        files, 
+        files,
       };
     })
   );
@@ -78,6 +78,12 @@ export const getFolderStructure = async (req: Request, res: Response) => {
     console.error("Error building folder structure:", error);
     res.status(500).json({ error: "Failed to fetch folder structure" });
   }
+};
+
+export const getFolderCount = async (req: Request, res: Response) => {
+  const counts = await Folder.countDocuments()
+  res.json({ counts });
+  return
 };
 
 export const updateFolder = async (req: Request, res: Response) => {

@@ -3,13 +3,15 @@ import {
   createFolder,
   getFolderStructure,
   deleteFolder,
-  updateFolder
+  updateFolder,
+  getFolderCount
 } from "../controllers/folder.controller";
 
 const router = express.Router();
 
 router.post("/", createFolder);
 router.get("/", getFolderStructure);
+router.get("/", getFolderCount);
 router.delete("/:id", deleteFolder);
 router.patch("/:id", updateFolder);
 

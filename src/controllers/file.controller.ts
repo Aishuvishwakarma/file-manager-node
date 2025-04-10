@@ -15,6 +15,11 @@ export const getFiles = async (req: Request, res: Response) => {
   res.json({ files, total: count });
 };
 
+export const getFilesCount = async (req: Request, res: Response) => {
+  const counts = await File.countDocuments()
+  res.json({ counts });
+};
+
 export const getFileById = async (
   req: Request,
   res: Response
