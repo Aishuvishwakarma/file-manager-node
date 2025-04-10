@@ -9,7 +9,7 @@ import {
 const router = express.Router();
 
 router.get("/", getFiles);
-router.get("/", getFilesCount);
+router.get("/count", getFilesCount);
 router.get("/:id", getFileById);
 router.delete("/:id", deleteFile);
 

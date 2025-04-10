@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post("/", createFolder);
 router.get("/", getFolderStructure);
-router.get("/", getFolderCount);
+router.get("/count", getFolderCount);
 router.delete("/:id", deleteFolder);
 router.patch("/:id", updateFolder);
 
