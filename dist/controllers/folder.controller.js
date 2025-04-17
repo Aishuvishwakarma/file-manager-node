@@ -8,52 +8,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteFolder = exports.updateFolder = exports.getFolderStructure = exports.createFolder = void 0;
-const folder_model_1 = require("../models/folder.model");
-const file_model_1 = require("../models/file.model");
+exports.deleteFileOrFolder = exports.updateFolder = exports.getFileSystemCounts = exports.getFileSystemStructure = exports.uploadFile = exports.createFolder = void 0;
+const fileSystem_model_1 = require("../models/fileSystem.model"); // updated model
+const path_1 = __importDefault(require("path"));
+const fileSystem_service_1 = require("../services/fileSystem.service");
 const createFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, parent, description } = req.body;
-    const folder = new folder_model_1.Folder({ name, parent, description });
-    yield folder.save();
-    res.status(201).json(folder);
+    try {
+        const folder = yield (0, fileSystem_service_1.createFolderService)(req.body);
+        res.status(201).json(folder);
+    }
+    catch (error) {
+        console.error("Error creating folder:", error);
+        res.status(500).json({ message: "Failed to create folder" });
+    }
 });
 exports.createFolder = createFolder;
-// Recursive
-const buildFolderTree = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (parentId = null, filters = {}) {
-    const folderQuery = { parent: parentId };
-    if (filters.name) {
-        folderQuery.name = { $regex: filters.name, $options: "i" };
-    }
-    if (filters.description) {
-        folderQuery.description = { $regex: filters.description, $options: "i" };
-    }
-    if (filters.createdAt) {
-        const date = new Date(filters.createdAt);
-        const nextDay = new Date(date);
-        nextDay.setDate(date.getDate() + 1);
-        folderQuery.createdAt = { $gte: date, $lt: nextDay };
-    }
-    const folders = yield folder_model_1.Folder.find(folderQuery).lean();
-    const foldersWithChildrenAndFiles = yield Promise.all(folders.map((folder) => __awaiter(void 0, void 0, void 0, function* () {
-        const children = yield buildFolderTree(folder._id.toString(), filters);
-        const fileQuery = { folder: folder._id };
-        if (filters.name) {
-            fileQuery.name = { $regex: filters.name, $options: "i" };
+const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { folderId } = req.body;
+        const file = req.file;
+        if (!file) {
+            res.status(400).json({ message: "No file uploaded" });
+            return;
         }
-        if (filters.createdAt) {
-            const date = new Date(filters.createdAt);
-            const nextDay = new Date(date);
-            nextDay.setDate(date.getDate() + 1);
-            fileQuery.createdAt = { $gte: date, $lt: nextDay };
-        }
-        const files = yield file_model_1.File.find(fileQuery).lean();
-        return Object.assign(Object.assign({}, folder), { children,
-            files });
-    })));
-    return foldersWithChildrenAndFiles;
+        // 🛠️ Extract only relative path (remove absolute system path)
+        const relativePath = path_1.default.relative(path_1.default.join(__dirname, ".."), file.path);
+        // ✅ Save only relative path in DB
+        const newFile = yield (0, fileSystem_service_1.uploadFileService)(Object.assign(Object.assign({}, file), { path: relativePath }), folderId || null); // Pass folderId to the service
+        res.status(201).json(newFile);
+    }
+    catch (error) {
+        console.error("File upload failed:", error);
+        res.status(500).json({ message: "File upload failed", error });
+    }
 });
-const getFolderStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.uploadFile = uploadFile;
+const getFileSystemStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     try {
         const filters = {
@@ -61,49 +55,55 @@ const getFolderStructure = (req, res) => __awaiter(void 0, void 0, void 0, funct
             description: (_b = req.query.description) === null || _b === void 0 ? void 0 : _b.toString(),
             createdAt: (_c = req.query.createdAt) === null || _c === void 0 ? void 0 : _c.toString(),
         };
-        const folders = yield buildFolderTree(null, filters);
-        const files = yield file_model_1.File.find({ folder: null }).lean();
-        res.json({ folders, files });
+        const data = yield (0, fileSystem_service_1.getFileSystemStructureService)(filters);
+        res.json(data);
     }
     catch (error) {
-        console.error("Error building folder structure:", error);
-        res.status(500).json({ error: "Failed to fetch folder structure" });
+        console.error("Error building file system structure:", error);
+        res.status(500).json({ error: "Failed to fetch file system structure" });
     }
 });
-exports.getFolderStructure = getFolderStructure;
-const updateFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getFileSystemStructure = getFileSystemStructure;
+const getFileSystemCounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const _id = req.params.id;
-        const data = req.body;
-        const updatedFolder = yield folder_model_1.Folder.findByIdAndUpdate(_id, data, {
-            new: true,
+        const [folderCount, fileCount] = yield Promise.all([
+            fileSystem_model_1.FileSystem.countDocuments({ type: "folder" }),
+            fileSystem_model_1.FileSystem.countDocuments({ type: "file" }),
+        ]);
+        res.json({
+            folders: folderCount,
+            files: fileCount,
         });
-        if (!updatedFolder) {
-            res.status(404).json({ error: "Folder not found" });
-            return;
-        }
-        res.status(200).json({ message: "Folder updated", folder: updatedFolder });
     }
     catch (error) {
+        console.error("Error getting file system counts:", error);
+        res.status(500).json({ error: "Failed to get file system counts" });
+    }
+});
+exports.getFileSystemCounts = getFileSystemCounts;
+const updateFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        const folder = yield (0, fileSystem_service_1.updateFolderService)(id, data);
+        res.status(200).json({ message: "Folder updated", folder });
+    }
+    catch (error) {
+        const status = error.message === "Folder not found" ? 404 : 500;
         console.error("Error updating folder:", error);
-        res.status(500).json({ error: "Failed to update folder" });
+        res.status(status).json({ error: error.message || "Failed to update folder" });
     }
 });
 exports.updateFolder = updateFolder;
-const deleteFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const deleteFileOrFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const _id = req.params.id;
-        const result = yield folder_model_1.Folder.deleteOne({ _id });
-        yield folder_model_1.Folder.deleteOne({ parent: _id });
-        if (result.deletedCount === 0) {
-            res.status(404).json({ error: "Folder not found" });
-            return;
-        }
-        res.status(200).json({ message: "Folder deleted successfully" });
+        const id = req.params.id;
+        const result = yield (0, fileSystem_service_1.deleteFileOrFolderService)(id);
+        res.status(200).json(result);
     }
     catch (error) {
-        console.error("Error deleting folder:", error);
-        res.status(500).json({ error: "Failed to delete folder" });
+        const status = error.message === "Item not found" ? 404 : 500;
+        res.status(status).json({ error: error.message || "Failed to delete item" });
     }
 });
-exports.deleteFolder = deleteFolder;
+exports.deleteFileOrFolder = deleteFileOrFolder;
