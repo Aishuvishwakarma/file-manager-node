@@ -11,18 +11,15 @@ dotenv_1.default.config();
 const cors_1 = __importDefault(require("cors"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const path_1 = __importDefault(require("path"));
-const folder_routes_1 = __importDefault(require("./routes/folder.routes"));
-const file_routes_1 = __importDefault(require("./routes/file.routes"));
-const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
+const fileSystem_routes_1 = __importDefault(require("./routes/fileSystem.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ extended: true }));
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
 // Routes
-app.use('/api/folders', folder_routes_1.default);
-app.use('/api/files', file_routes_1.default);
-app.use('/api/upload', upload_routes_1.default);
+app.use('/api/file-system', fileSystem_routes_1.default);
 const PORT = process.env.PORT || 5000;
 mongoose_1.default
     .connect(process.env.MONGO_URI)
