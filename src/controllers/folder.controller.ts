@@ -3,6 +3,7 @@ import { FileSystem } from "../models/fileSystem.model"; // updated model
 import path from "path";
 import { createFolderService, deleteFileOrFolderService, getFileSystemStructureService, updateFolderService, uploadFileService } from "../services/fileSystem.service";
 
+// Create a new folder
 export const createFolder = async (req: Request, res: Response): Promise<void> => {
   try {
     const folder = await createFolderService(req.body);
@@ -13,6 +14,7 @@ export const createFolder = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+// Route to upload a file (uses multer middleware for file handling + validation)
 export const uploadFile = async (req: Request, res: Response): Promise<void> => {
   try {
     const { folderId } = req.body;
@@ -39,6 +41,7 @@ export const uploadFile = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+// Route to fetch the full folder/file structure
 export const getFileSystemStructure = async (req: Request, res: Response) => {
   try {
     const filters = {
@@ -56,6 +59,7 @@ export const getFileSystemStructure = async (req: Request, res: Response) => {
   }
 };
 
+// Route to get file/folder counts (e.g., total folders, total files)
 export const getFileSystemCounts = async (req: Request, res: Response) => {
   try {
     const [folderCount, fileCount] = await Promise.all([
@@ -73,6 +77,7 @@ export const getFileSystemCounts = async (req: Request, res: Response) => {
   }
 };
 
+// Route to delete a file or folder by ID
 export const updateFolder = async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
@@ -88,6 +93,7 @@ export const updateFolder = async (req: Request, res: Response) => {
   }
 };
 
+// Route to update folder details by ID
 export const deleteFileOrFolder = async (req: Request, res: Response) => {
   try {
     const id = req.params.id;

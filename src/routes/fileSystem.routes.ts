@@ -11,14 +11,24 @@ import { validateSchema } from "../middleware/validate";
 import { upload } from "../middleware/uploadMiddleware";
 import { createFolderSchema, uploadFileSchema } from "../validations/createFolder.schema";
 
-
 const router = express.Router();
 
+// Route to create a new folder (with validation)
 router.post("/folder", validateSchema(createFolderSchema), createFolder);
-router.post('/upload', upload.single('file'), validateSchema(uploadFileSchema), uploadFile);
+
+// Route to upload a file (uses multer middleware for file handling + validation)
+router.post("/upload", upload.single("file"), validateSchema(uploadFileSchema), uploadFile);
+
+// Route to fetch the full folder/file structure
 router.get("/", getFileSystemStructure);
+
+// Route to get file/folder counts (e.g., total folders, total files)
 router.get("/count", getFileSystemCounts);
+
+// Route to delete a file or folder by ID
 router.delete("/:id", deleteFileOrFolder);
+
+// Route to update folder details by ID
 router.patch("/:id", updateFolder);
 
 export default router;

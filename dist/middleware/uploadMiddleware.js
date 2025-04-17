@@ -6,14 +6,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.upload = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
-// Set up multer storage engine to store files in a specific directory
+const fs_1 = __importDefault(require("fs"));
+// Define upload path
+const uploadPath = path_1.default.join(__dirname, '..', 'uploads');
+// Ensure uploads folder exists
+if (!fs_1.default.existsSync(uploadPath)) {
+    fs_1.default.mkdirSync(uploadPath, { recursive: true });
+}
+// Multer storage config
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path_1.default.join(__dirname, '..', 'uploads')); // Store files in the "uploads" folder
+        cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + "-" + file.originalname); // Give each file a unique name
+        cb(null, Date.now() + "-" + file.originalname);
     },
 });
-// Initialize multer with the storage configuration
 exports.upload = (0, multer_1.default)({ storage });
