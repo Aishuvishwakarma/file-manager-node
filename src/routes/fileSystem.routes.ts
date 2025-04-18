@@ -5,7 +5,8 @@ import {
   deleteFileOrFolder,
   updateFolder,
   getFileSystemCounts,
-  uploadFile
+  uploadFile,
+  getBreadcrumb
 } from "../controllers/folder.controller";
 import { validateSchema } from "../middleware/validate";
 import { upload } from "../middleware/uploadMiddleware";
@@ -30,5 +31,8 @@ router.delete("/:id", deleteFileOrFolder);
 
 // Route to update folder details by ID
 router.patch("/:id", updateFolder);
+
+// This route is used to get the breadcrumb structure for a specific folder
+router.get("/folder/breadcrumb/:id", getBreadcrumb);
 
 export default router;

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { FileSystem } from "../models/fileSystem.model"; // updated model
 import path from "path";
-import { createFolderService, deleteFileOrFolderService, getFileSystemStructureService, updateFolderService, uploadFileService } from "../services/fileSystem.service";
+import { createFolderService, deleteFileOrFolderService, getBreadcrumbService, getFileSystemStructureService, updateFolderService, uploadFileService } from "../services/fileSystem.service";
 
 // Create a new folder
 export const createFolder = async (req: Request, res: Response): Promise<void> => {
@@ -104,3 +104,18 @@ export const deleteFileOrFolder = async (req: Request, res: Response) => {
     res.status(status).json({ error: error.message || "Failed to delete item" });
   }
 };
+
+// This route is used to get the breadcrumb structure for a specific folder
+export const getBreadcrumb = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    const breadcrumb = await getBreadcrumbService(id)
+    if (!breadcrumb) {
+      res.status(404).json({ message: "Folder not found" });
+    }
+    res.status(200).json(breadcrumb);
+  } catch (error) {
+    console.error("Error getting breadcrumb:", error);
+    res.status(500).json({ message: "Failed to get breadcrumb" });
+  }
+}

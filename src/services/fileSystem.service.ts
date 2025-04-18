@@ -170,3 +170,21 @@ export const updateFolderService = async (id: string, data: any) => {
 
   return updatedFolder;
 };
+
+// Service to get breadcrumb for a folder
+export const getBreadcrumbService = async (folderId: string) => {
+  const path = [];
+  let current = await FileSystem.findById(folderId).lean();
+
+  while (current) {
+    path.unshift({
+      _id: current._id,
+      name: current.name,
+    });
+
+    if (!current.parent) break;
+    current = await FileSystem.findById(current.parent).lean();
+  }
+
+  return path; // ordered from root to clicked folder
+};
