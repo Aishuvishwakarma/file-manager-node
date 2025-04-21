@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateFolderService = exports.deleteFileOrFolderService = exports.deleteFolderRecursively = exports.getFileSystemStructureService = exports.buildFileSystemTree = exports.uploadFileService = exports.createFolderService = exports.createFileSystemEntry = void 0;
+exports.getBreadcrumbService = exports.updateFolderService = exports.deleteFileOrFolderService = exports.deleteFolderRecursively = exports.getFileSystemStructureService = exports.buildFileSystemTree = exports.uploadFileService = exports.createFolderService = exports.createFileSystemEntry = void 0;
 const fileSystem_model_1 = require("../models/fileSystem.model");
 const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
@@ -154,3 +154,19 @@ const updateFolderService = (id, data) => __awaiter(void 0, void 0, void 0, func
     return updatedFolder;
 });
 exports.updateFolderService = updateFolderService;
+// Service to get breadcrumb for a folder
+const getBreadcrumbService = (folderId) => __awaiter(void 0, void 0, void 0, function* () {
+    const path = [];
+    let current = yield fileSystem_model_1.FileSystem.findById(folderId).lean();
+    while (current) {
+        path.unshift({
+            _id: current._id,
+            name: current.name,
+        });
+        if (!current.parent)
+            break;
+        current = yield fileSystem_model_1.FileSystem.findById(current.parent).lean();
+    }
+    return path; // ordered from root to clicked folder
+});
+exports.getBreadcrumbService = getBreadcrumbService;

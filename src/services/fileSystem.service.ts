@@ -2,8 +2,16 @@ import { FileSystem } from "../models/fileSystem.model";
 import { CreateFolderDTO } from "../dtos/createFolder.dto";
 import path from "path";
 import fs from "fs/promises";
+import { AppError } from "../utils/AppError";
+
 // Reusable service for creating a file or folder
-export const createFileSystemEntry = async (data: { name: string; path: string; type: string; parent?: string | null; description?: string | null }) => {
+export const createFileSystemEntry = async (data: {
+  name: string;
+  path: string;
+  type: string;
+  parent?: string | null;
+  description?: string | null;
+}) => {
   const entry = new FileSystem({
     name: data.name,
     path: data.path,
@@ -17,6 +25,9 @@ export const createFileSystemEntry = async (data: { name: string; path: string; 
 
 // Service for creating a folder
 export const createFolderService = async (data: CreateFolderDTO) => {
+  if (!data.name) {
+    throw new AppError("Folder name is required", 400);
+  }
   return await createFileSystemEntry({
     name: data.name,
     path: "", // Folders might not have a path if we're not uploading files
@@ -27,7 +38,14 @@ export const createFolderService = async (data: CreateFolderDTO) => {
 };
 
 // Service for uploading a file (this can use the above generic function)
-export const uploadFileService = async (file: Express.Multer.File, folderId: string | null) => {
+export const uploadFileService = async (
+  file: Express.Multer.File,
+  folderId: string | null
+) => {
+  if (!file) {
+    throw new AppError("File is required for upload", 400);
+  }
+
   return await createFileSystemEntry({
     name: file.originalname,
     path: file.path,
@@ -62,7 +80,10 @@ export const buildFileSystemTree = async (
 
   const result = await Promise.all(
     folders.map(async (folder) => {
-      const children = await buildFileSystemTree(folder._id.toString(), filters);
+      const children = await buildFileSystemTree(
+        folder._id.toString(),
+        filters
+      );
 
       const fileQuery: any = { parent: folder._id, type: "file" };
 
@@ -111,8 +132,10 @@ export const getFileSystemStructureService = async (filters: any) => {
   return { folders, files: topLevelFiles };
 };
 
-// Service to recursive folder deletion 
-export const deleteFolderRecursively = async (folderId: string): Promise<void> => {
+// Service to recursive folder deletion
+export const deleteFolderRecursively = async (
+  folderId: string
+): Promise<void> => {
   const children = await FileSystem.find({ parent: folderId });
 
   for (const child of children) {
@@ -120,7 +143,7 @@ export const deleteFolderRecursively = async (folderId: string): Promise<void> =
       await deleteFolderRecursively(child._id.toString());
     } else {
       try {
-        const filePath = path.join(__dirname, "..", "..", child.path || "");
+        const filePath = path.join(__dirname, "..", child.path || "");
         await fs.unlink(filePath);
       } catch (fsError) {
         console.warn(`Could not delete file from disk: ${fsError}`);
@@ -133,11 +156,13 @@ export const deleteFolderRecursively = async (folderId: string): Promise<void> =
 };
 
 // Service to delete a file or folder
-export const deleteFileOrFolderService = async (id: string): Promise<{ message: string }> => {
+export const deleteFileOrFolderService = async (
+  id: string
+): Promise<{ message: string }> => {
   const item: any = await FileSystem.findById(id);
 
   if (!item) {
-    throw new Error("Item not found");
+    throw new AppError("Item not found", 404);
   }
 
   if (item.type === "folder") {
@@ -145,7 +170,7 @@ export const deleteFileOrFolderService = async (id: string): Promise<{ message: 
     return { message: "Folder and its contents deleted successfully" };
   } else {
     try {
-      const filePath = path.join(__dirname, "..", "..", item.path || "");
+      const filePath = path.join(__dirname, "..", item.path || "");
       await fs.unlink(filePath);
     } catch (fsError) {
       console.warn(`Could not delete physical file: ${fsError}`);
@@ -156,7 +181,7 @@ export const deleteFileOrFolderService = async (id: string): Promise<{ message: 
   }
 };
 
-// Service to update a folder 
+// Service to update a folder
 export const updateFolderService = async (id: string, data: any) => {
   const updatedFolder = await FileSystem.findOneAndUpdate(
     { _id: id, type: "folder" },
@@ -165,8 +190,30 @@ export const updateFolderService = async (id: string, data: any) => {
   );
 
   if (!updatedFolder) {
-    throw new Error("Folder not found");
+    throw new AppError("Folder not found", 404);
   }
 
   return updatedFolder;
+};
+
+// Service to get breadcrumb for a folder
+export const getBreadcrumbService = async (folderId: string) => {
+  const path = [];
+  let current = await FileSystem.findById(folderId).lean();
+
+  if (!current) {
+    throw new AppError("Folder not found", 404);
+  }
+
+  while (current) {
+    path.unshift({
+      _id: current._id,
+      name: current.name,
+    });
+
+    if (!current.parent) break;
+    current = await FileSystem.findById(current.parent).lean();
+  }
+
+  return path; // ordered from root to clicked folder
 };

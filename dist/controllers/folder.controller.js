@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteFileOrFolder = exports.updateFolder = exports.getFileSystemCounts = exports.getFileSystemStructure = exports.uploadFile = exports.createFolder = void 0;
+exports.getBreadcrumb = exports.deleteFileOrFolder = exports.updateFolder = exports.getFileSystemCounts = exports.getFileSystemStructure = exports.uploadFile = exports.createFolder = void 0;
 const fileSystem_model_1 = require("../models/fileSystem.model"); // updated model
 const path_1 = __importDefault(require("path"));
 const fileSystem_service_1 = require("../services/fileSystem.service");
+// Create a new folder
 const createFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const folder = yield (0, fileSystem_service_1.createFolderService)(req.body);
@@ -27,6 +28,7 @@ const createFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.createFolder = createFolder;
+// Route to upload a file (uses multer middleware for file handling + validation)
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { folderId } = req.body;
@@ -47,6 +49,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.uploadFile = uploadFile;
+// Route to fetch the full folder/file structure
 const getFileSystemStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     try {
@@ -64,6 +67,7 @@ const getFileSystemStructure = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.getFileSystemStructure = getFileSystemStructure;
+// Route to get file/folder counts (e.g., total folders, total files)
 const getFileSystemCounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const [folderCount, fileCount] = yield Promise.all([
@@ -81,6 +85,7 @@ const getFileSystemCounts = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.getFileSystemCounts = getFileSystemCounts;
+// Route to delete a file or folder by ID
 const updateFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = req.params.id;
@@ -95,6 +100,7 @@ const updateFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.updateFolder = updateFolder;
+// Route to update folder details by ID
 const deleteFileOrFolder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = req.params.id;
@@ -107,3 +113,19 @@ const deleteFileOrFolder = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.deleteFileOrFolder = deleteFileOrFolder;
+// This route is used to get the breadcrumb structure for a specific folder
+const getBreadcrumb = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const breadcrumb = yield (0, fileSystem_service_1.getBreadcrumbService)(id);
+        if (!breadcrumb) {
+            res.status(404).json({ message: "Folder not found" });
+        }
+        res.status(200).json(breadcrumb);
+    }
+    catch (error) {
+        console.error("Error getting breadcrumb:", error);
+        res.status(500).json({ message: "Failed to get breadcrumb" });
+    }
+});
+exports.getBreadcrumb = getBreadcrumb;
