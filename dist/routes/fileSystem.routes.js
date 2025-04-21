@@ -21,4 +21,6 @@ router.get("/count", folder_controller_1.getFileSystemCounts);
 router.delete("/:id", folder_controller_1.deleteFileOrFolder);
 // Route to update folder details by ID
 router.patch("/:id", folder_controller_1.updateFolder);
+// This route is used to get the breadcrumb structure for a specific folder
+router.get("/folder/breadcrumb/:id", folder_controller_1.getBreadcrumb);
 exports.default = router;

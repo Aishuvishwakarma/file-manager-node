@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteFileOrFolder = exports.updateFolder = exports.getFileSystemCounts = exports.getFileSystemStructure = exports.uploadFile = exports.createFolder = void 0;
+exports.getBreadcrumb = exports.deleteFileOrFolder = exports.updateFolder = exports.getFileSystemCounts = exports.getFileSystemStructure = exports.uploadFile = exports.createFolder = void 0;
 const fileSystem_model_1 = require("../models/fileSystem.model"); // updated model
 const path_1 = __importDefault(require("path"));
 const fileSystem_service_1 = require("../services/fileSystem.service");
@@ -113,3 +113,19 @@ const deleteFileOrFolder = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.deleteFileOrFolder = deleteFileOrFolder;
+// This route is used to get the breadcrumb structure for a specific folder
+const getBreadcrumb = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const breadcrumb = yield (0, fileSystem_service_1.getBreadcrumbService)(id);
+        if (!breadcrumb) {
+            res.status(404).json({ message: "Folder not found" });
+        }
+        res.status(200).json(breadcrumb);
+    }
+    catch (error) {
+        console.error("Error getting breadcrumb:", error);
+        res.status(500).json({ message: "Failed to get breadcrumb" });
+    }
+});
+exports.getBreadcrumb = getBreadcrumb;
