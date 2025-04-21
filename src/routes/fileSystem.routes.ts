@@ -7,7 +7,7 @@ import {
   getFileSystemCounts,
   uploadFile,
   getBreadcrumb,
-} from "../controllers/folder.controller";
+} from "../controllers/fileSystem.controller";
 import { validateSchema } from "../middleware/validate";
 import { upload } from "../middleware/uploadMiddleware";
 import {
