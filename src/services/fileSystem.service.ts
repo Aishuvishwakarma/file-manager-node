@@ -143,7 +143,7 @@ export const deleteFolderRecursively = async (
       await deleteFolderRecursively(child._id.toString());
     } else {
       try {
-        const filePath = path.join(__dirname, "..", "..", child.path || "");
+        const filePath = path.join(__dirname, "..", child.path || "");
         await fs.unlink(filePath);
       } catch (fsError) {
         console.warn(`Could not delete file from disk: ${fsError}`);
@@ -170,7 +170,7 @@ export const deleteFileOrFolderService = async (
     return { message: "Folder and its contents deleted successfully" };
   } else {
     try {
-      const filePath = path.join(__dirname, "..", "..", item.path || "");
+      const filePath = path.join(__dirname, "..", item.path || "");
       await fs.unlink(filePath);
     } catch (fsError) {
       console.warn(`Could not delete physical file: ${fsError}`);
