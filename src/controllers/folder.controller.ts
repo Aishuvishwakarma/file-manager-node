@@ -1,10 +1,20 @@
 import { Request, Response } from "express";
 import { FileSystem } from "../models/fileSystem.model"; // updated model
 import path from "path";
-import { createFolderService, deleteFileOrFolderService, getBreadcrumbService, getFileSystemStructureService, updateFolderService, uploadFileService } from "../services/fileSystem.service";
+import {
+  createFolderService,
+  deleteFileOrFolderService,
+  getBreadcrumbService,
+  getFileSystemStructureService,
+  updateFolderService,
+  uploadFileService,
+} from "../services/fileSystem.service";
 
 // Create a new folder
-export const createFolder = async (req: Request, res: Response): Promise<void> => {
+export const createFolder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const folder = await createFolderService(req.body);
     res.status(201).json(folder);
@@ -15,7 +25,10 @@ export const createFolder = async (req: Request, res: Response): Promise<void> =
 };
 
 // Route to upload a file (uses multer middleware for file handling + validation)
-export const uploadFile = async (req: Request, res: Response): Promise<void> => {
+export const uploadFile = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { folderId } = req.body;
     const file = req.file;
@@ -29,10 +42,13 @@ export const uploadFile = async (req: Request, res: Response): Promise<void> => 
     const relativePath = path.relative(path.join(__dirname, ".."), file.path);
 
     // ✅ Save only relative path in DB
-    const newFile = await uploadFileService({
-      ...file,
-      path: relativePath, // Save relative path
-    }, folderId || null); // Pass folderId to the service
+    const newFile = await uploadFileService(
+      {
+        ...file,
+        path: relativePath, // Save relative path
+      },
+      folderId || null
+    ); // Pass folderId to the service
 
     res.status(201).json(newFile);
   } catch (error) {
@@ -89,7 +105,9 @@ export const updateFolder = async (req: Request, res: Response) => {
   } catch (error: any) {
     const status = error.message === "Folder not found" ? 404 : 500;
     console.error("Error updating folder:", error);
-    res.status(status).json({ error: error.message || "Failed to update folder" });
+    res
+      .status(status)
+      .json({ error: error.message || "Failed to update folder" });
   }
 };
 
@@ -101,7 +119,9 @@ export const deleteFileOrFolder = async (req: Request, res: Response) => {
     res.status(200).json(result);
   } catch (error: any) {
     const status = error.message === "Item not found" ? 404 : 500;
-    res.status(status).json({ error: error.message || "Failed to delete item" });
+    res
+      .status(status)
+      .json({ error: error.message || "Failed to delete item" });
   }
 };
 
@@ -109,7 +129,7 @@ export const deleteFileOrFolder = async (req: Request, res: Response) => {
 export const getBreadcrumb = async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
-    const breadcrumb = await getBreadcrumbService(id)
+    const breadcrumb = await getBreadcrumbService(id);
     if (!breadcrumb) {
       res.status(404).json({ message: "Folder not found" });
     }
@@ -118,4 +138,4 @@ export const getBreadcrumb = async (req: Request, res: Response) => {
     console.error("Error getting breadcrumb:", error);
     res.status(500).json({ message: "Failed to get breadcrumb" });
   }
-}
+};

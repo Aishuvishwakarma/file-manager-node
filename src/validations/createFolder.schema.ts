@@ -7,9 +7,9 @@ import * as yup from "yup";
  * - `description`: optional string for folder description (nullable).
  */
 export const createFolderSchema = yup.object({
-    name: yup.string().required("Folder name is required"),
-    parent: yup.string().optional().nullable(),
-    description: yup.string().optional().nullable(),
+  name: yup.string().required("Folder name is required"),
+  parent: yup.string().optional().nullable(),
+  description: yup.string().optional().nullable(),
 });
 
 /**
@@ -17,5 +17,5 @@ export const createFolderSchema = yup.object({
  * - `folderId`: optional string to associate file with a folder (nullable).
  */
 export const uploadFileSchema = yup.object({
-    folderId: yup.string().optional().nullable()
+  folderId: yup.string().optional().nullable(),
 });

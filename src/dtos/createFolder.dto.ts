@@ -1,4 +1,3 @@
-
 export interface CreateFolderDTO {
   name: string;
   parent?: string;

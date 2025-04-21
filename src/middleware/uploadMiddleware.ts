@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 // Define upload path
-const uploadPath = path.join(__dirname, '..', 'uploads');
+const uploadPath = path.join(__dirname, "..", "uploads");
 
 // Ensure uploads folder exists
 if (!fs.existsSync(uploadPath)) {

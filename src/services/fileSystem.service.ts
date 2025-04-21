@@ -3,7 +3,13 @@ import { CreateFolderDTO } from "../dtos/createFolder.dto";
 import path from "path";
 import fs from "fs/promises";
 // Reusable service for creating a file or folder
-export const createFileSystemEntry = async (data: { name: string; path: string; type: string; parent?: string | null; description?: string | null }) => {
+export const createFileSystemEntry = async (data: {
+  name: string;
+  path: string;
+  type: string;
+  parent?: string | null;
+  description?: string | null;
+}) => {
   const entry = new FileSystem({
     name: data.name,
     path: data.path,
@@ -27,7 +33,10 @@ export const createFolderService = async (data: CreateFolderDTO) => {
 };
 
 // Service for uploading a file (this can use the above generic function)
-export const uploadFileService = async (file: Express.Multer.File, folderId: string | null) => {
+export const uploadFileService = async (
+  file: Express.Multer.File,
+  folderId: string | null
+) => {
   return await createFileSystemEntry({
     name: file.originalname,
     path: file.path,
@@ -62,7 +71,10 @@ export const buildFileSystemTree = async (
 
   const result = await Promise.all(
     folders.map(async (folder) => {
-      const children = await buildFileSystemTree(folder._id.toString(), filters);
+      const children = await buildFileSystemTree(
+        folder._id.toString(),
+        filters
+      );
 
       const fileQuery: any = { parent: folder._id, type: "file" };
 
@@ -111,8 +123,10 @@ export const getFileSystemStructureService = async (filters: any) => {
   return { folders, files: topLevelFiles };
 };
 
-// Service to recursive folder deletion 
-export const deleteFolderRecursively = async (folderId: string): Promise<void> => {
+// Service to recursive folder deletion
+export const deleteFolderRecursively = async (
+  folderId: string
+): Promise<void> => {
   const children = await FileSystem.find({ parent: folderId });
 
   for (const child of children) {
@@ -133,7 +147,9 @@ export const deleteFolderRecursively = async (folderId: string): Promise<void> =
 };
 
 // Service to delete a file or folder
-export const deleteFileOrFolderService = async (id: string): Promise<{ message: string }> => {
+export const deleteFileOrFolderService = async (
+  id: string
+): Promise<{ message: string }> => {
   const item: any = await FileSystem.findById(id);
 
   if (!item) {
@@ -156,7 +172,7 @@ export const deleteFileOrFolderService = async (id: string): Promise<{ message: 
   }
 };
 
-// Service to update a folder 
+// Service to update a folder
 export const updateFolderService = async (id: string, data: any) => {
   const updatedFolder = await FileSystem.findOneAndUpdate(
     { _id: id, type: "folder" },
