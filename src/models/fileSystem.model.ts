@@ -7,6 +7,7 @@ const fileSystemSchema = new Schema(
     parent: { type: Types.ObjectId, ref: "FileSystem", default: null },
     description: { type: String, default: "" },
     path: { type: String },
+    createdBy: { type: Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
 );

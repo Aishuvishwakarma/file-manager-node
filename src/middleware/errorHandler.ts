@@ -1,18 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../utils/AppError';
+import { Request, Response, NextFunction } from "express";
+import { AppError } from "../utils/AppError";
 
 export const globalErrorHandler = (
-  err: Error | AppError,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const statusCode = (err instanceof AppError && err.statusCode) || 500;
-  const message = err.message || 'Something went wrong';
+  const statusCode = err.statusCode || 500;
+  const isOperational = err.isOperational || false;
 
+  // Only show full stack in development
+  if (process.env.NODE_ENV === "development") {
+    console.error("💥", err);
+    res.status(statusCode).json({
+      message: err.message,
+      stack: err.stack,
+    });
+    return;  // This ends the middleware chain
+  }
+
+  // In production, avoid leaking stack traces
   res.status(statusCode).json({
-    success: false,
-    message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    message: isOperational ? err.message : "Something went wrong!",
   });
 };

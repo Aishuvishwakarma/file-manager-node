@@ -12,44 +12,60 @@ import {
 import { catchAsync } from "../utils/catchAsync";
 import { AppError } from "../utils/AppError";
 
+// extended Request type to include user info
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
+
 // Create a new folder
-export const createFolder = catchAsync(async (req: Request, res: Response) => {
-  const folder = await createFolderService(req.body);
-  res.status(201).json(folder);
-});
+export const createFolder = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const createdBy = req.user?.userId;
+    const folder = await createFolderService({ createdBy, ...req.body });
+    res.status(201).json(folder);
+  }
+);
 
 // Route to upload a file (uses multer middleware for file handling + validation)
-export const uploadFile = catchAsync(async (req: Request, res: Response) => {
-  const { folderId } = req.body;
-  const file = req.file;
+export const uploadFile = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { folderId } = req.body;
+    const file = req.file;
+    const createdBy = req.user?.userId;
 
-  if (!file) {
-    res.status(400).json({ message: "No file uploaded" });
-    return;
+    if (!file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    // 🛠️ Extract only relative path (remove absolute system path)
+    const relativePath = path.relative(path.join(__dirname, ".."), file.path);
+
+    // ✅ Save only relative path in DB
+    const newFile = await uploadFileService(
+      {
+        ...file,
+        path: relativePath, // Save relative path
+      },
+      folderId || null,
+      createdBy
+    ); // Pass folderId to the service
+
+    res.status(201).json(newFile);
   }
-
-  // 🛠️ Extract only relative path (remove absolute system path)
-  const relativePath = path.relative(path.join(__dirname, ".."), file.path);
-
-  // ✅ Save only relative path in DB
-  const newFile = await uploadFileService(
-    {
-      ...file,
-      path: relativePath, // Save relative path
-    },
-    folderId || null
-  ); // Pass folderId to the service
-
-  res.status(201).json(newFile);
-});
+);
 
 // Route to fetch the full folder/file structure
 export const getFileSystemStructure = catchAsync(
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
+    const createdBy = req.user?.userId;
+
+    console.log(req.user, "req.user?.userId;");
     const filters = {
       name: req.query.name?.toString(),
       description: req.query.description?.toString(),
       createdAt: req.query.createdAt?.toString(),
+      createdBy: createdBy,
     };
 
     const data = await getFileSystemStructureService(filters);
@@ -60,10 +76,10 @@ export const getFileSystemStructure = catchAsync(
 
 // Route to get file/folder counts (e.g., total folders, total files)
 export const getFileSystemCounts = catchAsync(
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     const [folderCount, fileCount] = await Promise.all([
-      FileSystem.countDocuments({ type: "folder" }),
-      FileSystem.countDocuments({ type: "file" }),
+      FileSystem.countDocuments({ type: "folder", createdBy: req.user.userId }),
+      FileSystem.countDocuments({ type: "file", createdBy: req.user.userId }),
     ]);
 
     res.json({
@@ -74,22 +90,24 @@ export const getFileSystemCounts = catchAsync(
 );
 
 // Route to delete a file or folder by ID
-export const updateFolder = catchAsync(async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const data = req.body;
+export const updateFolder = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const id = req.params.id;
+    const data = req.body;
 
-  const folder = await updateFolderService(id, data);
+    const folder = await updateFolderService(id, data);
 
-  if (!folder) {
-    throw new AppError("Folder not found", 404);
+    if (!folder) {
+      throw new AppError("Folder not found", 404);
+    }
+
+    res.status(200).json({ message: "Folder updated", folder });
   }
-
-  res.status(200).json({ message: "Folder updated", folder });
-});
+);
 
 // Route to update folder details by ID
 export const deleteFileOrFolder = catchAsync(
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     const id = req.params.id;
     const result = await deleteFileOrFolderService(id);
     if (!result) {
@@ -100,11 +118,13 @@ export const deleteFileOrFolder = catchAsync(
 );
 
 // This route is used to get the breadcrumb structure for a specific folder
-export const getBreadcrumb = catchAsync(async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const breadcrumb = await getBreadcrumbService(id);
-  if (!breadcrumb) {
-    throw new AppError("Folder not found", 404);
+export const getBreadcrumb = catchAsync(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const id = req.params.id;
+    const breadcrumb = await getBreadcrumbService(id);
+    if (!breadcrumb) {
+      throw new AppError("Folder not found", 404);
+    }
+    res.status(200).json(breadcrumb);
   }
-  res.status(200).json(breadcrumb);
-});
+);

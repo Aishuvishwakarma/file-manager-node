@@ -14,8 +14,12 @@ import {
   createFolderSchema,
   uploadFileSchema,
 } from "../validations/createFolder.schema";
+import { protect } from "../middleware/authMiddleware";
 
 const router = express.Router();
+
+// Middleware to protect routes (authentication)
+router.use(protect);
 
 // Route to create a new folder (with validation)
 router.post("/folder", validateSchema(createFolderSchema), createFolder);

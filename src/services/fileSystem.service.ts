@@ -11,6 +11,7 @@ export const createFileSystemEntry = async (data: {
   type: string;
   parent?: string | null;
   description?: string | null;
+  createdBy?: string;
 }) => {
   const entry = new FileSystem({
     name: data.name,
@@ -18,6 +19,7 @@ export const createFileSystemEntry = async (data: {
     type: data.type,
     parent: data.parent || null,
     description: data.description || null,
+    createdBy: data.createdBy,
   });
 
   return await entry.save();
@@ -34,13 +36,15 @@ export const createFolderService = async (data: CreateFolderDTO) => {
     type: "folder",
     parent: data.parent,
     description: data.description,
+    createdBy: data.createdBy,
   });
 };
 
 // Service for uploading a file (this can use the above generic function)
 export const uploadFileService = async (
   file: Express.Multer.File,
-  folderId: string | null
+  folderId: string | null,
+  createdBy: string
 ) => {
   if (!file) {
     throw new AppError("File is required for upload", 400);
@@ -51,6 +55,7 @@ export const uploadFileService = async (
     path: file.path,
     type: "file",
     parent: folderId,
+    createdBy,
   });
 };
 
@@ -59,7 +64,11 @@ export const buildFileSystemTree = async (
   parentId: string | null = null,
   filters: any = {}
 ): Promise<any[]> => {
-  const baseQuery: any = { parent: parentId, type: "folder" };
+  const baseQuery: any = {
+    parent: parentId,
+    type: "folder",
+    createdBy: filters.createdBy,
+  };
 
   if (filters.name) {
     baseQuery.name = { $regex: filters.name, $options: "i" };
@@ -85,7 +94,11 @@ export const buildFileSystemTree = async (
         filters
       );
 
-      const fileQuery: any = { parent: folder._id, type: "file" };
+      const fileQuery: any = {
+        parent: folder._id,
+        type: "file",
+        createdBy: filters.createdBy,
+      };
 
       if (filters.name) {
         fileQuery.name = { $regex: filters.name, $options: "i" };
@@ -114,7 +127,11 @@ export const buildFileSystemTree = async (
 export const getFileSystemStructureService = async (filters: any) => {
   const folders = await buildFileSystemTree(null, filters);
 
-  const topLevelFilesQuery: any = { parent: null, type: "file" };
+  const topLevelFilesQuery: any = {
+    parent: null,
+    type: "file",
+    createdBy: filters.createdBy,
+  };
 
   if (filters.name) {
     topLevelFilesQuery.name = { $regex: filters.name, $options: "i" };
